@@ -1,0 +1,85 @@
+---
+title: "Simulating Clusters with Both Continuous and Categorical Variables"
+output: rmarkdown::github_document
+date: '2022-08-11'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(fig.retina = 2)
+```
+
+
+## Continuous Variables
+
+Convex clusters of continuous variables can be generated simply as multivariate Gaussians.
+
+```{r}
+
+# load packages
+
+library(mvtnorm) # for function rmvnorm
+library(clusterGeneration) # for function rcorrmatrix
+
+```
+
+Generate two clusters. To generate a Gaussian cluster, we need to specify the cluster mean vector and the cluster covariance matrix.
+
+```{r}
+
+cluster_points <- c(200, 200) # 200 points per cluster
+num_vars <- 2 # how many continuous variables?
+num_min_max <- 3 # determines distance between cluster centers; clusters closer if lower
+
+# generate numerical variables
+set.seed(100)
+cl1 <- rmvnorm(cluster_points[1], 
+               mean = runif(num_vars, min = -num_min_max, max = num_min_max), 
+                            rcorrmatrix(num_vars)) 
+cl2 <- rmvnorm(cluster_points[2], 
+               mean = runif(num_vars, min = -num_min_max, max = num_min_max), 
+                            rcorrmatrix(num_vars))
+
+z_con <- as.data.frame(rbind(cl1, cl2))
+names(z_con) <- paste0('num', 1:num_vars) 
+
+```
+
+Let's look at the clusters
+
+```{r}
+
+pairs(z_con, col = c(rep(2, cluster_points[1]), rep(4, cluster_points[2])))
+
+```
+
+
+```{r}
+
+R.Version()
+R.version
+version
+
+```
+
+
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
