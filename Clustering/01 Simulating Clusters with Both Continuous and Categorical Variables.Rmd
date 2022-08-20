@@ -36,7 +36,7 @@ The randomly generated mean vector and covariance matrix are then inputs to the 
 ```{r}
 
 
-gen_2_clusters <- function(cluster_points = c(200, 200), num_vars = 2, num_min_max = 3, seed = 100){
+gen_2_clusters_num <- function(cluster_points = c(200, 200), num_vars = 2, num_min_max = 3, seed = 100){
   
   # cluster_points: points per cluster
   # num_vars: how many continuous variables?
@@ -67,7 +67,7 @@ Let's look at the clusters
 
 ```{r}
 
-z <- gen_2_clusters(num_vars = 3, seed = 777)
+z <- gen_2_clusters_num(num_vars = 3, seed = 777)
 pairs(~ ., col = z$labels, data = z$data)
 
 ```
@@ -75,21 +75,56 @@ pairs(~ ., col = z$labels, data = z$data)
 ## Categorical Variables
 
 Two clusters of categorical variables.
-Each categorical variable can take on 3 values drawn from discrete uniform distributions.
-For low overlap, categorical variable A takes on values 1, 2, 3, 4, 5 in Cluster 1 and values 5, 6, 7, 8, 9 in Cluster 2.
-For medium overlap, categorical variable A takes on values 1, 2, 3, 4, 5 in Cluster 1 and values 4, 5, 6, 7, 8 in Cluster 2.
-For high overlap, categorical variable A takes on values 1, 2, 3, 4, 5 in Cluster 1 and values 3, 4, 5, 6, 7 in Cluster 2.
+Each categorical variable can take on 5 levels drawn from a discrete uniform distribution.
+For low overlap, categorical variable A has five levels 1, 2, 3, 4, 5 in Cluster 1 and five levels 5, 6, 7, 8, 9 in Cluster 2.
+For medium overlap, categorical variable A has five levels 1, 2, 3, 4, 5 in Cluster 1 and has five levels 4, 5, 6, 7, 8 in Cluster 2.
+For high overlap, categorical variable A has five levels 1, 2, 3, 4, 5 in Cluster 1 and has five levels 3, 4, 5, 6, 7 in Cluster 2.
 
 **why not one-hot encode?**
 
+Is it faster to generate the categorical variables by: calling `ceiling(runif(...))` once and then distributing the result to say three categorical variables? or calling `ceiling(runif(...))` three times, once for each categorical variable?
+
 ```{r}
 
-table(ceiling(runif(100000, min = 0, max = 5)))
+# table(ceiling(runif(100000, min = 0, max = 5)))
 
+system.time({
+  for (i in 1:3000000){
+    x <- ceiling(runif(1200, min = 0, max = 5))
+    x1 <- x[1:400]
+    x2 <- x[401:800]
+    x3 <- x[801:1200]
+  }
+})
 
+system.time({
+  for (i in 1:3000000){
+    x1 <- ceiling(runif(400, min = 0, max = 5))
+    x2 <- ceiling(runif(400, min = 0, max = 5))
+    x3 <- ceiling(runif(400, min = 0, max = 5))
+  }
+})
 
 ```
 
+Calling `ceiling(runif(...))` is faster by ~15%
+
+```{r}
+
+gen_2_clusters_cat <- function(cluster_points = c(200, 200), cat_vars = 2, overlap = "low", seed = 100){
+  # cluster_points: points per cluster
+  # cat_vars: how many categorical variables?
+  # overlap: ('low', 'medium', 'high') determines overlap in categorical variables; Each categorical variable can take on 5 levels drawn from a discrete uniform distribution.For low overlap, categorical variable A has five levels 1, 2, 3, 4, 5 in Cluster 1 and five levels 5, 6, 7, 8, 9 in Cluster 2. For medium overlap, categorical variable A has five levels 1, 2, 3, 4, 5 in Cluster 1 and has five levels 4, 5, 6, 7, 8 in Cluster 2. For high overlap, categorical variable A has five levels 1, 2, 3, 4, 5 in Cluster 1 and has five levels 3, 4, 5, 6, 7 in Cluster 2.
+  
+  set.seed(seed)
+  
+  if !(overlap in c("low", 'medium', "high")){
+    
+  }
+  
+}
+
+```
 
 
 
