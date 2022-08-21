@@ -118,7 +118,7 @@ gen_2_clusters_cat <- function(cluster_points = c(200, 200), cat_vars = 2, overl
   
   set.seed(seed)
   
-  if !(overlap in c("low", 'medium', "high")){
+  if (!(overlap %in% c("low", 'medium', "high"))){
     
   }
   
