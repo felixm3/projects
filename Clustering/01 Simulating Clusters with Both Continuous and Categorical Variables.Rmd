@@ -36,25 +36,30 @@ The randomly generated mean vector and covariance matrix are then inputs to the 
 ```{r}
 
 
-gen_2_clusters_num <- function(cluster_points = c(200, 200), num_vars = 2, num_min_max = 3, seed = 100){
+gen_2_clusters_con <- function(cluster_points = c(200, 200), con_vars = 2, con_dist = 3, seed = 100){
   
   # cluster_points: points per cluster
-  # num_vars: how many continuous variables?
-  # num_min_max:determines distance between cluster centers; clusters closer if smaller
+  # con_vars: how many continuous variables?
+  # con_dist: determines distance between cluster centers; clusters closer if smaller
+  
+  # load required packages
+
+  library(mvtnorm) # for function rmvnorm
+  library(clusterGeneration) # for function rcorrmatrix
   
   set.seed(seed)
   
   cl1 <- rmvnorm(cluster_points[1], 
-                 mean = runif(num_vars, min = -num_min_max, max = num_min_max), 
-                 sigma = rcorrmatrix(num_vars)) 
+                 mean = runif(con_vars, min = -con_dist, max = con_dist), 
+                 sigma = rcorrmatrix(con_vars)) 
   cl2 <- rmvnorm(cluster_points[2], 
-                 mean = runif(num_vars, min = -num_min_max, max = num_min_max), 
-                 sigma = rcorrmatrix(num_vars))
+                 mean = runif(con_vars, min = -con_dist, max = con_dist), 
+                 sigma = rcorrmatrix(con_vars))
   
   clust_labels <- c(rep(2, cluster_points[1]), rep(4, cluster_points[2]))
   
   z_con <- as.data.frame(rbind(cl1, cl2))
-  names(z_con) <- paste0('num', 1:num_vars)
+  names(z_con) <- paste0('con', 1:con_vars)
   
   return(list(data = z_con, labels = clust_labels))
   
@@ -67,7 +72,7 @@ Let's look at the clusters
 
 ```{r}
 
-z <- gen_2_clusters_num(num_vars = 3, seed = 777)
+z <- gen_2_clusters_con(con_vars = 3, seed = 7777)
 pairs(~ ., col = z$labels, data = z$data)
 
 ```
@@ -107,7 +112,7 @@ system.time({
 
 ```
 
-Calling `ceiling(runif(...))` is faster by ~15%
+Calling `ceiling(runif(...))` multiple times is faster by ~15%
 
 ```{r}
 
@@ -118,21 +123,83 @@ gen_2_clusters_cat <- function(cluster_points = c(200, 200), cat_vars = 2, overl
   
   set.seed(seed)
   
-  if (!(overlap %in% c("low", 'medium', "high"))){
-    
+  if (!(overlap %in% c("low", "medium", "high"))){
+    stop("overlap must be one of 'low', 'medium', 'high'")
   }
   
+  M <- matrix(nrow = sum(cluster_points), ncol = cat_vars)
+  
+  lo <- function(){
+    for (i in 1:cat_vars){
+      M[, i] <<- c(ceiling(runif(cluster_points[1], min = 0, max = 5)), 
+                  ceiling(runif(cluster_points[2], min = 4, max = 9)))
+    }
+  }
+  
+  med <- function(){
+    for (i in 1:cat_vars){
+      M[, i] <<- c(ceiling(runif(cluster_points[1], min = 0, max = 5)), 
+                  ceiling(runif(cluster_points[2], min = 3, max = 8)))
+    }
+  }
+  
+  hi <- function(){
+    for (i in 1:cat_vars){
+      M[, i] <<- c(ceiling(runif(cluster_points[1], min = 0, max = 5)), 
+                  ceiling(runif(cluster_points[2], min = 2, max = 7)))
+    }
+  }
+  
+  switch(overlap,
+         low = lo(),
+         medium = med(),
+         high = hi(), 
+         stop("overlap must be one of 'low', 'medium', 'high'"))
+  
+  clust_labels <- c(rep(2, cluster_points[1]), rep(4, cluster_points[2]))
+  
+  z_cat <- as.data.frame(M)
+  names(z_cat) <- paste0('cat', 1:cat_vars)
+  
+  return(list(data = z_cat, labels = clust_labels))
 }
+
+z <- gen_2_clusters_cat()
+pairs(jitter(as.matrix(z$data)), col = z$labels)
 
 ```
 
+Let's look at the clusters
 
+```{r plot categorical variables}
+
+z <- gen_2_clusters_cat(overlap = "medium")
+pairs(jitter(as.matrix(z$data)), col = z$labels)
+
+z <- gen_2_clusters_cat(overlap = "high")
+pairs(jitter(as.matrix(z$data)), col = z$labels)
+
+```
+
+Now generate 2 mixed-data clusters (both continuous and categorical variables)
+
+```{r}
+
+gen_2_clusters_mixed <- function(cluster_points = c(200, 200), con_vars = 2, con_dist = 3, seed = 7777, cat_vars = 2, overlap = "low"){
+  # combines the functions gen_2_clusters_con and gen_2_clusters_cat
+  
+  z_con <- gen_2_clusters_con(cluster_points, con_vars, con_dist, seed)
+  z_cat <- gen_2_clusters_cat(cluster_points, cat_vars, overlap, seed)
+}
+
+```
 
 ```{r}
 
 R.Version()
 R.version
 version
+sessionInfo()
 
 ```
 
@@ -142,18 +209,7 @@ version
 
 This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
-```{r cars}
-summary(cars)
-```
 
-## Including Plots
 
-You can also embed plots, for example:
 
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
