@@ -190,9 +190,40 @@ gen_2_clusters_mixed <- function(cluster_points = c(200, 200), con_vars = 2, con
   
   z_con <- gen_2_clusters_con(cluster_points, con_vars, con_dist, seed)
   z_cat <- gen_2_clusters_cat(cluster_points, cat_vars, overlap, seed)
+  
+  return(list(data = cbind(z_con$data, z_cat$data), labels = z_con$labels))
 }
 
+z <- gen_2_clusters_mixed()
+str(z)
+
+pairs(~ ., col = z$labels, data = z$data)
+
 ```
+
+Test k-protoypes and KAMILA on the dataset
+
+```{r}
+
+# load k-prototypes and KAMILA
+
+library(kamila) # kamila
+library(clustMixType) # kproto
+
+```
+
+Cluster dataset with `kamila` and with `kproto`
+
+```{r}
+
+z_kam <- kamila(Filter(is.numeric, z$data), Filter(is.factor, z$data), numClust = 2, numInit = 100)
+print(paste('kamila ARI:', round(ARI(z$lbl, z_kam$finalMemb), 3)))
+
+z_kproto <-kproto(z$data, k = 2, nstart = 100, verbose = FALSE)
+print(paste('kproto ARI:', round(ARI(z$lbl, z_kproto$cluster), 3)))
+
+```
+
 
 ```{r}
 
