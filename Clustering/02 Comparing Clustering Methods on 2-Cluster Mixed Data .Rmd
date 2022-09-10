@@ -9,22 +9,61 @@ knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(fig.retina = 2)
 ```
 
-## R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+The goal of the project was to compare established methods of clustering mixed data (data with both continuous and categorical variables) to our implementation of spectral clustering for mixed data.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+The established methods chosen were `KAMILA` and `kprototypes`.
 
-```{r cars}
-summary(cars)
+```{r}
+
+# rm(list = ls())
+
+# Load KAMILA and kprototypes
+library(kamila) # kamila
+library(clustMixType) # kproto
+library(MixGHD) # ARI
+
+# load functions for mixed data generation
+
+file_to_load <- "/Users/felix.mbuga/Library/Mobile Documents/com~apple~CloudDocs/GitHub/projects/Clustering/functions_gen_2_clusters.R"
+source(file_to_load)
+ls()
+
 ```
 
-## Including Plots
+Generate dataset and visualize
 
-You can also embed plots, for example:
+```{r}
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+z <- gen_2_clusters_mixed()
+str(z)
+
+pairs(~ ., col = z$labels, data = z$data)
+
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+Cluster dataset with `kamila` and with `kproto`
+
+```{r}
+
+z_kam <- kamila(Filter(is.numeric, z$data), Filter(is.factor, z$data), numClust = 2, numInit = 100)
+print(paste('kamila ARI:', round(ARI(z$labels, z_kam$finalMemb), 3)))
+
+z_kproto <-kproto(z$data, k = 2, nstart = 100, verbose = FALSE)
+print(paste('kproto ARI:', round(ARI(z$labels, z_kproto$cluster), 3)))
+
+```
+
+
+
+Session info
+
+```{r}
+
+R.Version()
+R.version
+version
+sessionInfo()
+
+```
