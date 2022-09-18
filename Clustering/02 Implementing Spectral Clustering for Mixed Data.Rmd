@@ -11,6 +11,59 @@ knitr::opts_chunk$set(fig.retina = 2)
 
 When we think of [spectral clustering](https://en.wikipedia.org/wiki/Spectral_clustering), we usually think of applications with continuous data, not categorical or mixed (containing both continuous and categorical variables) data. However, spectral clustering has no such limitation: all it requires is a similarity matrix as input.
 
+## Generate Similarity Matrix
+
+```{r}
+
+# load functions to generate dataset
+
+file_to_load <- "/Users/felix.mbuga/Library/Mobile Documents/com~apple~CloudDocs/GitHub/projects/Clustering/functions_gen_2_clusters.R"
+source(file_to_load)
+
+z <- gen_2_clusters_mixed()
+str(z)
+
+pairs(~ ., col = z$labels, data = z$data)
+
+```
+
+```{r}
+
+x <- z$data # data in z
+labels <- z$labels # labels in z
+
+x_num <- Filter(is.numeric, x) # numeric columns of x
+x_cat <- Filter(is.factor, x) # categorical columns of x
+
+library(cluster) # for function daisy -> used for SMC for cat vars
+
+# initialize cat_wgts to go from 0.9999 to 0.0001
+cat_wgts = c(0.9999, 0.999, seq(0.99, 0.01, -0.01), 0.001, 0.0001)
+
+# simple matching coefficient for categorical variables
+ifelse(length(x_cat) > 0, 
+       x_cat_dist <- as.matrix(daisy(x_cat)), 
+       x_cat_dist <- cat_wgts <- 0)				
+#head(x_cat)
+#head(x_cat_dist)
+# all entries of x_cat_dist are between 0 and 1
+
+ifelse(length(x_num) > 0, 
+       num_wgts <- 1 - cat_wgts, 
+       x_num_dist <- num_wgts <- 0)
+
+# Euclidean distance for numerical
+if(length(x_num) > 0) x_num_dist <- as.matrix(dist(x_num))
+
+x_num_dist <- x_num_dist/max(x_num_dist) # now x_num_dist entries are between 0 and 1
+#x_num_dist_sorted <- t(apply(x_num_dist, 1, sort)) # sort each row of x_num_dist in increasing order
+#x_nn_0 <- x_num_dist_sorted[, -1] # resulting column 1 is distance from each point to 1st-NN, col 2 is dist to 2nd-NN, etc
+#x_nn_0_col_med <- apply(x_nn_0, 2, median)
+#tmpsig <- x_nn_0_col_med[NN:(9 + NN)]
+
+```
+
+
 
 ## R Markdown
 
