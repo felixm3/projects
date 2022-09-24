@@ -75,6 +75,7 @@ centers <- 2
 starts <- 10
 iterations <- 300
 
+
 	# create matrix to store output
 	ARI_mat_big <- matrix(ncol = 5, dimnames = list(NULL, c('cat_wgt', 'sigma', 'bt/wt_ss', 'tot_wt_ss', 'ARI')))
 	#ptm <- proc.time()
@@ -105,7 +106,7 @@ iterations <- 300
 			         ARI_mat_small[j, 'sigma'] <- tmpsig[j]
 			         ARI_mat_small[j, 'bt/wt_ss'] <- res$betweenss/res$tot.withinss
 			         ARI_mat_small[j, 'tot_wt_ss'] <- res$tot.withinss
-			         ARI_mat_small[j, 'ARI'] <- ARI(res$cluster, z$lbl)
+			         ARI_mat_small[j, 'ARI'] <- ARI(res$cluster, z$labels)
                     
                   } # end if (!any(d == Inf) && !any(is.na(d)) && (max(d)[1] - min(d)[1] < 10^4))
 
@@ -115,12 +116,12 @@ iterations <- 300
 	} # end for (i in 1:length(cat_wgts)) 
 	ARI_mat_big <- ARI_mat_big[-1, ]
 	#proc.time() - ptm
-	#ARI_mat_big
-	#which.max(ARI_mat_big[, 'bt/wt_ss'])
-	#ARI_mat_big[which.max(ARI_mat_big[, 'bt/wt_ss']), ]
-	#which.max(ARI_mat_big[, 'ARI'])
-	#ARI_mat_big[which.max(ARI_mat_big[, 'ARI']), ]
-	#plot(ARI_mat_big[, c('sigma', 'ARI')], type = 'b')
+	head(ARI_mat_big)
+	which.max(ARI_mat_big[, 'bt/wt_ss'])
+	ARI_mat_big[which.max(ARI_mat_big[, 'bt/wt_ss']), ]
+	which.max(ARI_mat_big[, 'ARI'])
+	ARI_mat_big[which.max(ARI_mat_big[, 'ARI']), ]
+	plot(ARI_mat_big[, c('sigma', 'ARI')], type = 'b')
 	#?plot
 
 ```

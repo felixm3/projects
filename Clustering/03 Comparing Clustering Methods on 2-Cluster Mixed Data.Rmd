@@ -16,7 +16,8 @@ The established methods chosen were `KAMILA` and `kprototypes`.
 
 ```{r}
 
-# rm(list = ls())
+rm(list = ls())
+gc()
 
 # Load KAMILA and kprototypes
 library(kamila) # kamila
@@ -29,13 +30,19 @@ file_to_load <- "/Users/felix.mbuga/Library/Mobile Documents/com~apple~CloudDocs
 source(file_to_load)
 ls()
 
+# load function for spectral clustering of mixed data
+
+file_to_load <- "/Users/felix.mbuga/Library/Mobile Documents/com~apple~CloudDocs/GitHub/projects/Clustering/function_speClusMixed.R"
+source(file_to_load)
+ls()
+
 ```
 
 Generate dataset and visualize
 
 ```{r}
 
-z <- gen_2_clusters_mixed()
+z <- gen_2_clusters_mixed(seed = sample(1000, 1))
 str(z)
 
 pairs(~ ., col = z$labels, data = z$data)
@@ -52,6 +59,9 @@ print(paste('kamila ARI:', round(ARI(z$labels, z_kam$finalMemb), 3)))
 
 z_kproto <-kproto(z$data, k = 2, nstart = 100, verbose = FALSE)
 print(paste('kproto ARI:', round(ARI(z$labels, z_kproto$cluster), 3)))
+
+z_speclus <- speClusMixed(z)
+print(paste('speclus ARI:', round(z_speclus$ARI['ARI'], 3)))
 
 ```
 
