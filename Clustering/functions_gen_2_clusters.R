@@ -27,15 +27,15 @@ gen_2_clusters_con <- function(cluster_points = c(200, 200), con_vars = 2, con_d
   
 }
 
-gen_2_clusters_cat <- function(cluster_points = c(200, 200), cat_vars = 2, overlap = "low", seed = 100){
+gen_2_clusters_cat <- function(cluster_points = c(200, 200), cat_vars = 2, cat_overlap = "low", seed = 100){
   # cluster_points: points per cluster
   # cat_vars: how many categorical variables?
-  # overlap: ('low', 'medium', 'high') determines overlap in categorical variables; Each categorical variable can take on 5 levels drawn from a discrete uniform distribution.For low overlap, categorical variable A has five levels 1, 2, 3, 4, 5 in Cluster 1 and five levels 5, 6, 7, 8, 9 in Cluster 2. For medium overlap, categorical variable A has five levels 1, 2, 3, 4, 5 in Cluster 1 and has five levels 4, 5, 6, 7, 8 in Cluster 2. For high overlap, categorical variable A has five levels 1, 2, 3, 4, 5 in Cluster 1 and has five levels 3, 4, 5, 6, 7 in Cluster 2.
+  # cat_overlap: ('low', 'medium', 'high') determines overlap in categorical variables; Each categorical variable can take on 5 levels drawn from a discrete uniform distribution.For low overlap, categorical variable A has five levels 1, 2, 3, 4, 5 in Cluster 1 and five levels 5, 6, 7, 8, 9 in Cluster 2. For medium overlap, categorical variable A has five levels 1, 2, 3, 4, 5 in Cluster 1 and has five levels 4, 5, 6, 7, 8 in Cluster 2. For high overlap, categorical variable A has five levels 1, 2, 3, 4, 5 in Cluster 1 and has five levels 3, 4, 5, 6, 7 in Cluster 2.
   
   set.seed(seed)
   
-  if (!(overlap %in% c("low", "medium", "high"))){
-    stop("overlap must be one of 'low', 'medium', 'high'")
+  if (!(cat_overlap %in% c("low", "medium", "high"))){
+    stop("cat_overlap must be one of 'low', 'medium', 'high'")
   }
   
   M <- matrix(nrow = sum(cluster_points), ncol = cat_vars)
@@ -61,11 +61,11 @@ gen_2_clusters_cat <- function(cluster_points = c(200, 200), cat_vars = 2, overl
     }
   }
   
-  switch(overlap,
+  switch(cat_overlap,
          low = lo(),
          medium = med(),
          high = hi(), 
-         stop("overlap must be one of 'low', 'medium', 'high'"))
+         stop("cat_overlap must be one of 'low', 'medium', 'high'"))
   
   clust_labels <- c(rep(2, cluster_points[1]), rep(4, cluster_points[2]))
   
@@ -78,11 +78,11 @@ gen_2_clusters_cat <- function(cluster_points = c(200, 200), cat_vars = 2, overl
   return(list(data = z_cat, labels = clust_labels))
 }
 
-gen_2_clusters_mixed <- function(cluster_points = c(200, 200), con_vars = 2, con_dist = 3, seed = 7777, cat_vars = 2, overlap = "low"){
+gen_2_clusters_mixed <- function(cluster_points = c(200, 200), con_vars = 2, con_dist = 3, seed = 7777, cat_vars = 2, cat_overlap = "low"){
   # combines the functions gen_2_clusters_con and gen_2_clusters_cat
   
   z_con <- gen_2_clusters_con(cluster_points, con_vars, con_dist, seed)
-  z_cat <- gen_2_clusters_cat(cluster_points, cat_vars, overlap, seed)
+  z_cat <- gen_2_clusters_cat(cluster_points, cat_vars, cat_overlap, seed)
   
   return(list(data = cbind(z_con$data, z_cat$data), labels = z_con$labels))
 }

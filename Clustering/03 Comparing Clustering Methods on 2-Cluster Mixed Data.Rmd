@@ -42,7 +42,7 @@ Generate dataset and visualize
 
 ```{r}
 
-z <- gen_2_clusters_mixed(seed = sample(1000, 1))
+z <- gen_2_clusters_mixed(seed = 42)
 str(z)
 
 pairs(~ ., col = z$labels, data = z$data)
@@ -65,6 +65,155 @@ print(paste('speclus ARI:', round(z_speclus$ARI['ARI'], 3)))
 
 ```
 
+Another dataset
+
+```{r}
+
+z <- gen_2_clusters_mixed(con_dist = 2, seed = sample(1000, 1))
+
+pairs(~ ., col = z$labels, data = z$data)
+
+z_kam <- kamila(Filter(is.numeric, z$data), Filter(is.factor, z$data), numClust = 2, numInit = 100)
+print(paste('kamila ARI:', round(ARI(z$labels, z_kam$finalMemb), 3)))
+
+z_kproto <-kproto(z$data, k = 2, nstart = 100, verbose = FALSE)
+print(paste('kproto ARI:', round(ARI(z$labels, z_kproto$cluster), 3)))
+
+z_speclus <- speClusMixed(z)
+print(paste('speclus ARI:', round(z_speclus$ARI['ARI'], 3)))
+
+```
+Generate multiple (4,800) datasets to compare the three methods on.
+
+Number of continuous-categorical variables 1-3, 2-2, 3-1
+Number of levels in categorical variables 3, 5
+Degree of overlap in variables lo-lo, lo-hi, hi-lo, hi-hi
+Clusters balanced? (points per cluster) 200-200, 320-80
+
+```{r}
+
+##### Step 1: Create the Datasets
+
+## 4800 datasets
+
+# load functions for mixed data generation
+
+file_to_load <- "/Users/felix.mbuga/Library/Mobile Documents/com~apple~CloudDocs/GitHub/projects/Clustering/functions_gen_2_clusters.R"
+source(file_to_load)
+ls()
+
+# create list with 4 continuous-categorical olap types low-low, low-high, high-low, high-high
+data_4800 <- vector(mode = 'list', length = 4) # 4 overlap profiles, 20 datasets each, 80 datasets total
+names(data_4800) <- c('low_low', 'low_high', 'high_low', 'high_high')
+#str(data_4800)
+
+# for each olap type, number of continuous-categorical variables: 3-1, 2-2, 1-3
+for (i in 1:length(data_4800)) {
+	#print(i)
+	#str(i)
+	data_4800[[i]] <- vector(mode = 'list', length = 3)
+	names(data_4800[[i]]) <- c('con_cat_3_1', 'con_cat_2_2', 'con_cat_1_3')
+}
+#str(data_4800)
+
+# for each con-cat ratio, 2 categorical level types: 3 & 5
+for (i in 1:4) { # 4 olap types
+	for (j in 1:3) { # 3 con-cat ratios
+		data_4800[[i]][[j]] <- vector(mode = 'list', length = 2)
+		names(data_4800[[i]][[j]]) <- c('3_cat_levs', '5_cat_levs')
+	}
+}
+#str(data_4800)
+
+# for each cat level type, 2 balance levels: 200/200 & 320/80
+for (i in 1:4) { # 4 olap types
+	for (j in 1:3) { # 3 con-cat ratios
+		for (k in 1:2) { # 2 cat-lev types
+			data_4800[[i]][[j]][[k]] <- vector(mode = 'list', length = 2)
+			names(data_4800[[i]][[j]][[k]]) <- c('200_200', '320_80')
+		}
+	}
+}
+#str(data_4800)
+
+# under each dataset type, have 100 lists, 1 for each of 100 datasets
+for (i in 1:4) { # 4 olap types
+	for (j in 1:3) { # 3 con-cat ratios
+		for (k in 1:2) { # 2 cat-lev types
+			for (l in 1:2) { # 2 balance levels
+				data_4800[[i]][[j]][[k]][[l]] <- vector(mode = 'list', length = 100)
+				names(data_4800[[i]][[j]][[k]][[l]]) <- as.character(1:100)
+			}		
+		}
+	}
+}
+#str(data_4800)
+
+
+# under each dataset, store 4 items
+	# - the dataset & cluster labels
+	# - the kamila output
+	# - the k-prototypes output
+	# - the speclus output
+for (i in 1:4) { # 4 olap types
+	for (j in 1:3) { # 3 con-cat ratios
+		for (k in 1:2) { # 2 cat-lev types
+			for (l in 1:2) { # 2 balance levels
+				for (m in 1:100) { # 100 datasets
+					data_4800[[i]][[j]][[k]][[l]][[m]] <- vector(mode = 'list', length = 4)
+					names(data_4800[[i]][[j]][[k]][[l]][[m]]) <- c('dataset', 'kamila', 'kproto', 'speclus')
+				}			
+			}		
+		}
+	}
+}
+#str(data_4800)
+
+data_4800[[i]][[j]][[k]][[l]][[m]]	# list of 4 items: c('dataset', 'kamila', 'kproto', 'speclus')
+
+##### %%% next step: make the 4800 datasets to populate data_4800
+
+# make the 4800 datasets; calculate kamila & kproto ARI
+set.seed(4800)
+
+con_dists <- c(2, 2, 1, 1)
+cat_overlaps <- c("low", "high", "low", "high")
+(olaps <- data.frame(con_dists, cat_overlaps))
+
+(con_cat_ratio <- matrix(c(3, 1, 2, 2, 1, 3), nrow = 3, byrow = TRUE))
+(cat_lev_types <- c(3, 5))
+(bal_levs <- matrix(c(200, 200, 320, 80), nrow = 2, byrow=TRUE))
+
+
+count <- 0
+for (i in 1:4) { # 4 olap types
+	for (j in 1:3) { # 3 con-cat ratios
+		for (k in 1:2) { # 2 cat-lev types
+			for (l in 1:2) { # 2 balance levels
+				for (m in 1:100) { # 100 datasets
+					z <- data_4800[[i]][[j]][[k]][[l]][[m]]$dataset <- 
+					  gen_2_clusters_mixed(cluster_points = c(bal_levs[l, 1], bal_levs[l, 2]), 
+					                       con_vars =  con_cat_ratio[j, 1],
+					                       con_dist =  olaps[i, 1], 
+					                       seed = count,
+					                       cat_vars = con_cat_ratio[j, 2], 
+					                       cat_overlap = olaps[i, 2])
+					count = count + 1
+					print(count)
+				}			
+			}		
+		}
+	}
+}
+
+
+```
+ 
+```{r}
+
+str(data_4800)
+
+```
 
 
 Session info
