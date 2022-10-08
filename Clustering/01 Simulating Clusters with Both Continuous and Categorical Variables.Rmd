@@ -5,8 +5,14 @@ date: '2022-08-11'
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_chunk$set(fig.retina = 2)
+
+knitr::opts_chunk$set(
+  echo = TRUE,
+  fig.retina = 2,
+  message = FALSE,
+  warning = FALSE
+)
+
 ```
 
 

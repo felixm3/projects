@@ -45,6 +45,8 @@ speClusMixed <- function(z, centers = 2, NN = 10, MM = 0, cat_wgts = c(0.9999, 0
     ktmp_sorted <- t(apply(ktmp, 1, sort))
     x_nn_0 <- ktmp_sorted[, -1] # resulting column 1 is distance from each point to 1st-NN, col 2 is dist to 2nd-NN, etc
     x_nn_0_col_med <- apply(x_nn_0, 2, median)
+    
+    # ignore points at distance 0
     tmpsigA <- x_nn_0_col_med[x_nn_0_col_med > 0]
     tmpsig <- tmpsigA[NN:(MM + NN)]
     
@@ -86,8 +88,9 @@ speClusMixed <- function(z, centers = 2, NN = 10, MM = 0, cat_wgts = c(0.9999, 0
   #plot(ARI_mat_big[, c('sigma', 'ARI')], type = 'b')
   #?plot
   
-  return(list(ARI_mat_big = ARI_mat_big, x_nn_0_col_med = x_nn_0_col_med, 
+  return(list(ARI_mat_big = ARI_mat_big, 
+              x_nn_0_col_med = x_nn_0_col_med, 
               ARI = ARI_mat_big[which.max(ARI_mat_big[, 'bt/wt_ss']), ], 
-              ARI_best_pos = ARI_mat_big[which.max(ARI_mat_big[, 'ARI']), ]))
+              ARI_best_possible = ARI_mat_big[which.max(ARI_mat_big[, 'ARI']), ]))
 } # end function speclus_v_200708
 
