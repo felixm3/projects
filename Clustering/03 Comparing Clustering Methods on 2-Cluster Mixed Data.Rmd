@@ -235,20 +235,20 @@ for (i in 1:4) { # 4 olap types
 		for (k in 1:2) { # 2 cat-lev types
 			for (l in 1:2) { # 2 balance levels
 				for (m in 1:2) { # 100 datasets
-					print(c(i, j, k, l, m))
+					#print(c(i, j, k, l, m))
 					#cat('\n')
 					z <- data_4800[[i]][[j]][[k]][[l]][[m]]$dataset
 					
 					z_kam <- data_4800[[i]][[j]][[k]][[l]][[m]]$kamila$z_kam <- kamila(Filter(is.numeric, z$data), Filter(is.factor, z$data), 
 																			numClust = 2, numInit = 100)
 					#print(paste('kamila ARI:', round(ARI(z$lbl, z_kam$finalMemb), 3)))
-					data_4800[[i]][[j]][[k]][[l]][[m]]$kamila$ARI <- round(ARI(z$lbl, z_kam$finalMemb), 3)
+					data_4800[[i]][[j]][[k]][[l]][[m]]$kamila$ARI <- round(ARI(z$labels, z_kam$finalMemb), 3)
 					
 					z_kproto <- data_4800[[i]][[j]][[k]][[l]][[m]]$kproto$z_kproto <- kproto(z$data, k = 2, nstart = 100, verbose = FALSE)
 					#print(paste('kproto ARI:', round(ARI(z$lbl, z_kproto$cluster), 3)))
-					data_4800[[i]][[j]][[k]][[l]][[m]]$kproto$ARI <- round(ARI(z$lbl, z_kproto$cluster), 3)
+					data_4800[[i]][[j]][[k]][[l]][[m]]$kproto$ARI <- round(ARI(z$labels, z_kproto$cluster), 3)
 					
-					z_speclus <- data_4800[[i]][[j]][[k]][[l]][[m]]$speclus$z_speclus <- speClusMixed(z)
+					z_speclus <- data_4800[[i]][[j]][[k]][[l]][[m]]$speclus$z_speclus <- speClusMixed(z$data)
 					
 					#count <- count + 1
 					#print(count)
