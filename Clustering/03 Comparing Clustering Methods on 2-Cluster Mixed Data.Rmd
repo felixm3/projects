@@ -56,7 +56,8 @@ Generate dataset and visualize
 z <- gen_2_clusters_mixed(seed = 42)
 str(z)
 
-pairs(~ ., col = z$labels, data = z$data)
+pairs(~ ., data = z$data,
+      col = z$labels)
 
 ```
 
@@ -230,13 +231,13 @@ for (i in 1:4) { # 4 olap types
 
 ptm <- proc.time()
 
-for (i in 1:4) { # 4 olap types
-	for (j in 1:3) { # 3 con-cat ratios
-		for (k in 1:2) { # 2 cat-lev types
-			for (l in 1:2) { # 2 balance levels
-				for (m in 1:2) { # 100 datasets
-					#print(c(i, j, k, l, m))
-					#cat('\n')
+for (i in 1:1) { # 4 olap types
+	for (j in 1:1) { # 3 con-cat ratios
+		for (k in 1:1) { # 2 cat-lev types
+			for (l in 1:1) { # 2 balance levels
+				for (m in 1:3) { # 100 datasets
+					print(c(i, j, k, l, m))
+					cat('\n')
 					z <- data_4800[[i]][[j]][[k]][[l]][[m]]$dataset
 					
 					z_kam <- data_4800[[i]][[j]][[k]][[l]][[m]]$kamila$z_kam <- kamila(Filter(is.numeric, z$data), Filter(is.factor, z$data), 
@@ -248,7 +249,11 @@ for (i in 1:4) { # 4 olap types
 					#print(paste('kproto ARI:', round(ARI(z$lbl, z_kproto$cluster), 3)))
 					data_4800[[i]][[j]][[k]][[l]][[m]]$kproto$ARI <- round(ARI(z$labels, z_kproto$cluster), 3)
 					
-					z_speclus <- data_4800[[i]][[j]][[k]][[l]][[m]]$speclus$z_speclus <- speClusMixed(z$data)
+					try({
+					  
+					  z_speclus <- data_4800[[i]][[j]][[k]][[l]][[m]]$speclus$z_speclus <- speClusMixed(z)
+					
+					  }) # end try
 					
 					#count <- count + 1
 					#print(count)
@@ -262,7 +267,22 @@ for (i in 1:4) { # 4 olap types
 proc.time() - ptm
 
 ```
+Dataset 1-1-1-1-1 crashes SpeClusMixed with error message:
 
+```
+
+Error in kmeans(yi, centers, iterations, nstart = starts) : 
+  more cluster centers than distinct data points.
+In addition: Warning message:
+In do.call(.Call, args = dot_call_args) :
+  only 0 eigenvalue(s) converged, less than k = 2
+
+```
+
+All other datasets run fine.
+
+
+---
 
 Session info
 

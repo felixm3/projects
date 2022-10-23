@@ -1,4 +1,6 @@
-speClusMixed <- function(z, centers = 2, NN = 10, MM = 0, cat_wgts = c(0.9999, 0.999, seq(0.99, 0.01, -0.01), 0.001, 0.0001), starts = 10, iterations = 300, verbose = FALSE) {
+speClusMixed <- function(z, centers = 2, NN = 10, MM = 0, 
+                         cat_wgts = c(0.9999, 0.999, seq(0.99, 0.01, -0.01), 0.001, 0.0001), 
+                         starts = 10, iterations = 300, verbose = FALSE) {
   # v220920
   # uses specc algo to pick sigma 1/max(as.matrix(dist(Filter(is.numeric, z$data))))
   # calculate Gaussian kernel similarity for numeric variables
@@ -37,11 +39,19 @@ speClusMixed <- function(z, centers = 2, NN = 10, MM = 0, cat_wgts = c(0.9999, 0
   
   
   # create matrix to store output
-  ARI_mat_big <- matrix(ncol = 5, dimnames = list(NULL, c('cat_wgt', 'sigma', 'bt/wt_ss', 'tot_wt_ss', 'ARI')))
+  ARI_mat_big <- matrix(ncol = 5, 
+                        dimnames = list(NULL, 
+                                        c('cat_wgt', 'sigma', 'bt/wt_ss', 'tot_wt_ss', 'ARI')))
   #ptm <- proc.time()
   for (i in 1:length(cat_wgts)) { # (i in 1:length(cat_wgts))
+    
+    
+    try({
+    
+    
     if (verbose) print(i)
     ktmp <- num_wgts[i] * x_num_dist + cat_wgts[i] * x_cat_dist
+    
     ktmp_sorted <- t(apply(ktmp, 1, sort))
     x_nn_0 <- ktmp_sorted[, -1] # resulting column 1 is distance from each point to 1st-NN, col 2 is dist to 2nd-NN, etc
     x_nn_0_col_med <- apply(x_nn_0, 2, median)
@@ -51,7 +61,9 @@ speClusMixed <- function(z, centers = 2, NN = 10, MM = 0, cat_wgts = c(0.9999, 0
     tmpsig <- tmpsigA[NN:(MM + NN)]
     
     # matrix to store results for each sigma
-    ARI_mat_small <- matrix(nrow = length(tmpsig), ncol = 5, dimnames = list(NULL, c('cat_wgt', 'sigma', 'bt/wt_ss', 'tot_wt_ss', 'ARI')))
+    ARI_mat_small <- matrix(nrow = length(tmpsig), ncol = 5, 
+                            dimnames = list(NULL, 
+                                            c('cat_wgt', 'sigma', 'bt/wt_ss', 'tot_wt_ss', 'ARI')))
     for (j in 1:length(tmpsig)) { # (j in 1:length(tmpsig))
       if (verbose) print(paste(i, '-', j))
       ka <- exp((-(ktmp^2))/(2 * (tmpsig[j]^2))) # matrix of pairwise similarities using Gaussian kernel
@@ -77,6 +89,11 @@ speClusMixed <- function(z, centers = 2, NN = 10, MM = 0, cat_wgts = c(0.9999, 0
     } # for (j in 1:length(tmpsig)) 
     #proc.time() - ptm
     ARI_mat_big <- rbind(ARI_mat_big, ARI_mat_small)
+    
+    
+    }) # end try
+    
+    
   } # end for (i in 1:length(cat_wgts)) 
   ARI_mat_big <- ARI_mat_big[-1, ]
   #proc.time() - ptm
