@@ -231,11 +231,11 @@ for (i in 1:4) { # 4 olap types
 
 ptm <- proc.time()
 
-for (i in 1:1) { # 4 olap types
-	for (j in 1:1) { # 3 con-cat ratios
-		for (k in 1:1) { # 2 cat-lev types
-			for (l in 1:1) { # 2 balance levels
-				for (m in 1:3) { # 100 datasets
+for (i in 1:4) { # 4 olap types
+	for (j in 1:3) { # 3 con-cat ratios
+		for (k in 1:2) { # 2 cat-lev types
+			for (l in 1:2) { # 2 balance levels
+				for (m in 1:100) { # 100 datasets
 					print(c(i, j, k, l, m))
 					cat('\n')
 					z <- data_4800[[i]][[j]][[k]][[l]][[m]]$dataset
@@ -267,6 +267,7 @@ for (i in 1:1) { # 4 olap types
 proc.time() - ptm
 
 ```
+
 Dataset 1-1-1-1-1 crashes SpeClusMixed with error message:
 
 ```
@@ -280,6 +281,564 @@ In do.call(.Call, args = dot_call_args) :
 ```
 
 All other datasets run fine.
+
+---
+
+Adding `try` allowed the above to run on the HPC. Took a little over 22 hours to run to completion.
+
+```{r}
+
+# clean slate
+
+rm(list = ls())
+gc()
+
+# load RData with result
+
+file_name <- '/Users/felix.mbuga/Library/Mobile Documents/com~apple~CloudDocs/Random_R/data_4800_2022_10_22_09_14_56.RData'
+ne <- new.env()
+load(file = file_name, env=ne)
+ls(env=ne)
+
+```
+
+```{r}
+
+data_4800 <- ne$data_4800
+rm(ne, file_name)
+ls()
+
+```
+
+Make dataframe with all ARIs for boxplots
+
+```{r Make dataframe with all ARIs for boxplots}
+
+# see 200401 scratch.R and 2103 scratch.R
+
+# make dataframe with all ARIs for boxplots
+overlap <- character(14400)
+overlap_ <- c('lo-lo', 'lo-hi', 'hi-lo', 'hi-hi')
+#overlap <- rep(overlap_, each = 1200)
+# overlap <- rep(overlap_, each = 12)
+
+con_cat_vars <- character(14400)
+con_cat_vars_ <- c('3-num-1-cat', '2-num-2-cat', '1-num-3-cat')
+# con_cat_vars <- rep(con_cat_vars_, each = 4, times = 4)
+# data.frame(overlap, con_cat_vars)
+
+cat_levs <- integer(14400)
+cat_levs_ <- c(3, 5)
+# cat_levs <- rep(cat_levs_, each = 2, times = 12)
+# data.frame(overlap, con_cat_vars, cat_levs)
+
+cluster_sizes <- character(14400)
+cluster_sizes_ <- c('200-200', '320-80')
+# cluster_sizes <- rep(cluster_sizes_, each = 1, times = 24)
+# data.frame(overlap, con_cat_vars, cat_levs, cluster_sizes)
+
+
+dataset_index <- integer(14400)
+dataset_index_ <- 1:100
+# dataset_index <- rep(dataset_index_, each = 1, times = 48)
+# data.frame(overlap, con_cat_vars, cat_levs, cluster_sizes, dataset_index)
+
+method <- character(14400)
+method_ <- c('kpr', 'kam', 'spc')
+# method <- rep(method_, each = 1, times = 48)
+# data.frame(overlap, con_cat_vars, cat_levs, cluster_sizes, dataset_index, method)
+
+ARI_x <- numeric(14400)
+
+n <- 1
+for (i in 1:4) { # 4 olap types
+	for (j in 1:3) { # 3 con-cat ratios
+		for (k in 1:2) { # 2 cat-lev types
+			for (l in 1:2) { # 2 balance levels
+				for (m in 1:100) { # 100 datasets
+					#print(c(i, j, k, l, m))
+					overlap[(3*n-2):(3*n)] <- overlap_[i]
+					con_cat_vars[(3*n-2):(3*n)] <- con_cat_vars_[j]
+					cat_levs[(3*n-2):(3*n)] <- cat_levs_[k]
+					cluster_sizes[(3*n-2):(3*n)] <- cluster_sizes_[l]
+					dataset_index[(3*n-2):(3*n)] <- dataset_index_[m]
+					method[(3*n-2):(3*n)] <- c('kpr', 'kam', 'spc')
+					
+					kpr_ARI <- data_4800[[i]][[j]][[k]][[l]][[m]]$kproto$ARI
+					kam_ARI <- data_4800[[i]][[j]][[k]][[l]][[m]]$kamila$ARI
+					spc_ARI <- data_4800[[i]][[j]][[k]][[l]][[m]]$speclus$z_speclus$ARI['ARI']
+					
+					ARI_x[(3*n-2):(3*n)] <- c(kpr_ARI, kam_ARI, spc_ARI)
+					
+					#cat('\n')
+					
+					#z_speclus <- data_4800[[i]][[j]][[k]][[l]][[m]]$speclus$z_speclus <- speclus_v(z)
+					
+					#count <- count + 1
+					#print(n)
+					#cat('\n')
+					n <- n + 1
+				}			
+			}		
+		}
+	}
+}
+
+data_4800_ARI <- data.frame(overlap, con_cat_vars, cat_levs, 
+                            cluster_sizes, dataset_index, method, ARI_x)
+
+head(data_4800_ARI)
+
+```
+
+Convert relevant variables to factor
+
+```{r}
+
+str(data_4800_ARI)
+
+data_4800_ARI$cat_levs <- as.factor(data_4800_ARI$cat_levs)
+data_4800_ARI$dataset_index <- as.factor(data_4800_ARI$dataset_index)
+
+head(data_4800_ARI)
+
+
+```
+
+Boxplots!
+
+```{r}
+
+boxplot(ARI_x ~ ., data = data_4800_ARI[-5]) # too much info on 1 plot! split up into lo-lo, lo-hi, hi-lo, hi-hi
+
+
+```
+
+Too much info on 1 plot! split up into lo-lo, lo-hi, hi-lo, hi-hi
+
+```{r lo-lo boxplot}
+
+data_4800_ARI_lo_lo <- data_4800_ARI[data_4800_ARI$overlap == 'lo-lo', -5]
+data_4800_ARI_lo_lo$overlap <- factor(data_4800_ARI_lo_lo$overlap)
+x <- boxplot(ARI_x ~ ., data = data_4800_ARI_lo_lo, col = 1:12)
+x$names
+legend('bottomleft', data_4800_ARI_lo_lo$method, fill = c(1, 2, 3))
+
+
+```
+
+Unstack
+
+```{r lo-lo unstack}
+
+
+aggregate(ARI_x ~ ., data = data_4800_ARI_lo_lo, median)
+unstack(aggregate(ARI_x ~ ., data = data_4800_ARI_lo_lo, median), ARI_x ~ method)
+
+x <- aggregate(ARI_x ~ ., data = data_4800_ARI[data_4800_ARI$overlap == 'lo-lo', -5], function(x) round(median(x), 3))
+y <- unstack(aggregate(ARI_x ~ ., data = data_4800_ARI[data_4800_ARI$overlap == 'lo-lo', -5], function(x) round(median(x), 3)), ARI_x ~ method)
+(data_4800_ARI_lo_lo_median <- cbind(subset(x[1:12, ], select = -c(ARI_x, method)), y))
+
+```
+
+```{r lo-hi}
+
+x <- aggregate(ARI_x ~ ., data = data_4800_ARI[data_4800_ARI$overlap == 'lo-hi', -5], function(x) round(median(x), 3))
+y <- unstack(aggregate(ARI_x ~ ., data = data_4800_ARI[data_4800_ARI$overlap == 'lo-hi', -5], function(x) round(median(x), 3)), ARI_x ~ method)
+(data_4800_ARI_lo_hi_median <- cbind(subset(x[1:12, ], select = -c(ARI_x, method)), y))
+
+```
+
+```{r hi-lo}
+
+x <- aggregate(ARI_x ~ ., data = data_4800_ARI[data_4800_ARI$overlap == 'hi-lo', -5], function(x) round(median(x), 3))
+y <- unstack(aggregate(ARI_x ~ ., data = data_4800_ARI[data_4800_ARI$overlap == 'hi-lo', -5], function(x) round(median(x), 3)), ARI_x ~ method)
+(data_4800_ARI_hi_lo_median <- cbind(subset(x[1:12, ], select = -c(ARI_x, method)), y))
+
+```
+
+```{r hi-hi}
+
+x <- aggregate(ARI_x ~ ., data = data_4800_ARI[data_4800_ARI$overlap == 'hi-hi', -5], function(x) round(median(x), 3))
+y <- unstack(aggregate(ARI_x ~ ., data = data_4800_ARI[data_4800_ARI$overlap == 'hi-hi', -5], function(x) round(median(x), 3)), ARI_x ~ method)
+(data_4800_ARI_hi_hi_median <- cbind(subset(x[1:12, ], select = -c(ARI_x, method)), y))
+
+```
+
+## spc_ARI vs spc_ARI_best_possible
+
+
+```{r}
+
+# load data_4800 RData
+
+file_name <- '/Users/felix.mbuga/Library/Mobile Documents/com~apple~CloudDocs/Random_R/data_4800_2022_10_22_09_14_56.RData'
+ne <- new.env()
+load(file = file_name, env=ne)
+data_4800 <- ne$data_4800
+rm(ne, file_name)
+
+
+spc_ARI <- spc_ARI_best_possible <- cat_wgt <- cat_wgt_best_pos <- discrepancy <- kam_less_spc <- numeric(4800)
+
+n <- 1
+for (i in 1:4) { # 4 olap types
+	for (j in 1:3) { # 3 con-cat ratios
+		for (k in 1:2) { # 2 cat-lev types
+			for (l in 1:2) { # 2 balance levels
+				for (m in 1:100) { # 100 datasets
+
+					spc_ARI[n] <- data_4800[[i]][[j]][[k]][[l]][[m]]$speclus$z_speclus$ARI['ARI']
+					cat_wgt[n] <- data_4800[[i]][[j]][[k]][[l]][[m]]$speclus$z_speclus$ARI['cat_wgt']
+					spc_ARI_best_possible[n] <- data_4800[[i]][[j]][[k]][[l]][[m]]$speclus$z_speclus$ARI_best_possible['ARI']
+					cat_wgt_best_pos[n] <- data_4800[[i]][[j]][[k]][[l]][[m]]$speclus$z_speclus$ARI_best_possible['cat_wgt']
+					discrepancy[n] <- spc_ARI_best_possible[n] - spc_ARI[n]
+					kam_less_spc[n] <- data_4800[[i]][[j]][[k]][[l]][[m]]$kamila$ARI - spc_ARI[n]
+
+					
+					n <- n + 1
+				}			
+			}		
+		}
+	}
+}
+
+x <- cbind(spc_ARI, spc_ARI_best_possible, cat_wgt, cat_wgt_best_pos, discrepancy, kam_less_spc)
+x <- round(x, 4)
+
+head(x)
+
+```
+
+how different are spc_ARI vs spc_ARI_best_possible?
+
+```{r}
+
+summary(x)
+cat('\n')
+sum(x[, 'discrepancy'] >= 0.1)
+cat('\n')
+summary(x[x[, 'kam_less_spc'] > 0, 'kam_less_spc'])
+
+```
+
+sort x by largest discrepancy
+
+```{r}
+
+(x_ordered <- x[order(x[, 'discrepancy'], decreasing = TRUE), ])
+
+```
+
+```{r}
+
+summary(lm(kam_less_spc ~ discrepancy, 
+           data = data.frame(x[x[, 'kam_less_spc'] > 0, ])))
+
+```
+
+```{r}
+
+(x_ordered_kam_wins <- x_ordered[x_ordered[, 'kam_less_spc'] > 0, ])
+
+```
+
+```{r}
+
+summary(x_ordered_kam_wins)
+cat('\n')
+quantile(x_ordered_kam_wins[, 'cat_wgt'], probs = seq(0, 1, 0.1))
+
+```
+
+```{r}
+
+(x_ordered_kam_wins_discr <- x_ordered_kam_wins[x_ordered_kam_wins[, 'discrepancy'] > 0, ])
+
+```
+
+```{r}
+
+(x_ordered_kam_wins_discr_0p3 <- x_ordered_kam_wins[x_ordered_kam_wins[, 'discrepancy'] > 0.3, ])
+tail(x_ordered_kam_wins_discr_0p3)
+
+```
+
+Algo unstable at
+- very low cat wgt
+- very high cat wgt
+- some intermediate values e.g. see tail
+  - maybe before accepting a value of cat_wgt, check if result(??) changes much +/- 0.01 cat_wgt?
+- make dataset harder for kam?
+
+```{r}
+
+sum(x_ordered_kam_wins_discr_0p3[, 'cat_wgt'] > 0.9)
+
+```
+
+```{r}
+
+# clean slate
+
+rm(list = ls())
+gc()
+
+# load RData with result
+
+file_name <- '/Users/felix.mbuga/Library/Mobile Documents/com~apple~CloudDocs/Random_R/data_4800_2022_10_22_09_14_56.RData'
+ne <- new.env()
+load(file = file_name, env=ne)
+
+data_4800 <- ne$data_4800
+rm(ne, file_name)
+ls()
+
+```
+
+
+Make dataframe with all ARIs for boxplots
+
+```{r Make dataframe with all ARIs for boxplots}
+
+# see 200401 scratch.R and 2103 scratch.R
+
+# make dataframe with all ARIs for boxplots
+overlap <- character(14400)
+overlap_ <- c('lo-lo', 'lo-hi', 'hi-lo', 'hi-hi')
+#overlap <- rep(overlap_, each = 1200)
+# overlap <- rep(overlap_, each = 12)
+
+con_cat_vars <- character(14400)
+con_cat_vars_ <- c('3-num-1-cat', '2-num-2-cat', '1-num-3-cat')
+# con_cat_vars <- rep(con_cat_vars_, each = 4, times = 4)
+# data.frame(overlap, con_cat_vars)
+
+cat_levs <- integer(14400)
+cat_levs_ <- c(3, 5)
+# cat_levs <- rep(cat_levs_, each = 2, times = 12)
+# data.frame(overlap, con_cat_vars, cat_levs)
+
+cluster_sizes <- character(14400)
+cluster_sizes_ <- c('200-200', '320-80')
+# cluster_sizes <- rep(cluster_sizes_, each = 1, times = 24)
+# data.frame(overlap, con_cat_vars, cat_levs, cluster_sizes)
+
+
+dataset_index <- integer(14400)
+dataset_index_ <- 1:100
+# dataset_index <- rep(dataset_index_, each = 1, times = 48)
+# data.frame(overlap, con_cat_vars, cat_levs, cluster_sizes, dataset_index)
+
+method <- character(14400)
+method_ <- c('kpr', 'kam', 'spc')
+# method <- rep(method_, each = 1, times = 48)
+# data.frame(overlap, con_cat_vars, cat_levs, cluster_sizes, dataset_index, method)
+
+ARI_x <- numeric(14400)
+
+n <- 1
+for (i in 1:4) { # 4 olap types
+	for (j in 1:3) { # 3 con-cat ratios
+		for (k in 1:2) { # 2 cat-lev types
+			for (l in 1:2) { # 2 balance levels
+				for (m in 1:100) { # 100 datasets
+					#print(c(i, j, k, l, m))
+					overlap[(3*n-2):(3*n)] <- overlap_[i]
+					con_cat_vars[(3*n-2):(3*n)] <- con_cat_vars_[j]
+					cat_levs[(3*n-2):(3*n)] <- cat_levs_[k]
+					cluster_sizes[(3*n-2):(3*n)] <- cluster_sizes_[l]
+					dataset_index[(3*n-2):(3*n)] <- dataset_index_[m]
+					method[(3*n-2):(3*n)] <- c('kpr', 'kam', 'spc')
+					
+					kpr_ARI <- data_4800[[i]][[j]][[k]][[l]][[m]]$kproto$ARI
+					kam_ARI <- data_4800[[i]][[j]][[k]][[l]][[m]]$kamila$ARI
+					spc_ARI <- data_4800[[i]][[j]][[k]][[l]][[m]]$speclus$z_speclus$ARI['ARI']
+					
+					ARI_x[(3*n-2):(3*n)] <- c(kpr_ARI, kam_ARI, spc_ARI)
+					
+					n <- n + 1
+				}			
+			}		
+		}
+	}
+}
+
+data_4800_ARI <- data.frame(overlap, con_cat_vars, cat_levs, 
+                            cluster_sizes, dataset_index, method, ARI_x)
+
+# Convert relevant variables to factor
+
+data_4800_ARI$cat_levs <- as.factor(data_4800_ARI$cat_levs)
+data_4800_ARI$dataset_index <- as.factor(data_4800_ARI$dataset_index)
+
+str(data_4800_ARI)
+
+head(data_4800_ARI)
+
+```
+
+unstack ARI_x by method
+
+```{r}
+
+head(unstack(data_4800_ARI, ARI_x ~ method))
+
+```
+
+
+
+unstack ARI_x by method and keep rest of columns
+
+```{r}
+
+data_4800_ARI_unstack <- (data.frame(
+  unique(data_4800_ARI[1:5]), 
+  round(unstack(data_4800_ARI, ARI_x ~ method), 3)
+))
+
+head(data_4800_ARI_unstack)
+
+```
+
+in which of the 4 overlap types does spc perform worst compared to kam?
+
+```{r}
+
+# kam - spc
+data_4800_ARI_unstack['kam_less_spc'] <- data_4800_ARI_unstack['kam'] - data_4800_ARI_unstack['spc']
+head(data_4800_ARI_unstack)
+
+# median kam_less_spc by overlap
+
+head(aggregate(kam_less_spc ~ ., data = data_4800_ARI_unstack[c(1:4, 9)], 
+               function(x) round(median(x), 3)))
+
+```
+
+```{r}
+
+x <- aggregate(kam_less_spc ~ ., data = data_4800_ARI_unstack[c(1:4, 9)], 
+               function(x) round(median(x), 3))
+
+(x_ordered <- x[order(x[, 'kam_less_spc'], decreasing = TRUE), ])
+
+```
+
+* spc performs worst (compared to kam) in lo-hi and hi-hi
+* this is not what was seen in the paper
+* investigate first-row datasets
+
+```{r}
+
+head(data_4800_ARI_unstack[(data_4800_ARI_unstack$overlap == 'lo-hi') & 
+                             (data_4800_ARI_unstack$con_cat_vars == '1-num-3-cat') & 
+                             (data_4800_ARI_unstack$cat_levs == 5) & 
+                             (data_4800_ARI_unstack$cluster_sizes == '200-200') & 
+                             (data_4800_ARI_unstack$kam_less_spc > 0), -c(1:4)], 
+      n = 100)
+
+```
+
+also compare spc_ARI_best_possible
+
+```{r}
+
+spc_ARI <- spc_ARI_best_possible <- cat_wgt <- cat_wgt_best_pos <- discrepancy <- kam_less_spc <- numeric(4800)
+
+n <- 1
+for (i in 1:4) { # 4 olap types
+	for (j in 1:3) { # 3 con-cat ratios
+		for (k in 1:2) { # 2 cat-lev types
+			for (l in 1:2) { # 2 balance levels
+				for (m in 1:100) { # 100 datasets
+
+					spc_ARI[n] <- data_4800[[i]][[j]][[k]][[l]][[m]]$speclus$z_speclus$ARI['ARI']
+					cat_wgt[n] <- data_4800[[i]][[j]][[k]][[l]][[m]]$speclus$z_speclus$ARI['cat_wgt']
+					spc_ARI_best_possible[n] <- data_4800[[i]][[j]][[k]][[l]][[m]]$speclus$z_speclus$ARI_best_possible['ARI']
+					cat_wgt_best_pos[n] <- data_4800[[i]][[j]][[k]][[l]][[m]]$speclus$z_speclus$ARI_best_possible['cat_wgt']
+					discrepancy[n] <- spc_ARI_best_possible[n] - spc_ARI[n]
+					kam_less_spc[n] <- data_4800[[i]][[j]][[k]][[l]][[m]]$kamila$ARI - spc_ARI[n]
+
+					
+					n <- n + 1
+				}			
+			}		
+		}
+	}
+}
+
+x <- cbind(spc_ARI, spc_ARI_best_possible, cat_wgt, cat_wgt_best_pos, discrepancy, kam_less_spc)
+x <- round(x, 4)
+
+head(x)
+
+```
+
+
+```{r}
+
+head(cbind(data_4800_ARI_unstack, round(spc_ARI_best_possible, 3)), n = 10)
+
+```
+
+```{r}
+
+x <- cbind(data_4800_ARI_unstack, round(spc_ARI_best_possible, 3))
+  
+str(x)  
+
+head(x)
+```
+
+Inspect `lo-hi	1-num-3-cat	5	200-200` datasets based on ~4 cells above
+
+```{r}
+
+x <- x[order(x[, 'kam_less_spc'], decreasing = TRUE), ]
+
+head(x[(x$overlap == 'lo-hi') & 
+                             (x$con_cat_vars == '1-num-3-cat') & 
+                             (x$cat_levs == 5) & 
+                             (x$cluster_sizes == '200-200') & 
+                             (x$kam_less_spc > 0), -c(1:4)], 
+      n = 100)
+
+```
+
+start with datasets where spc_ARI_best_possible > kam??
+
+```{r}
+
+y <- x[(x$overlap == 'lo-hi') & 
+                             (x$con_cat_vars == '1-num-3-cat') & 
+                             (x$cat_levs == 5) & 
+                             (x$cluster_sizes == '200-200') & 
+                             (x$kam_less_spc > 0), -c(1:4)]
+head(y)
+
+```
+
+```{r}
+
+y[y[, 6] > y[, 2], ]
+
+```
+
+- start with `lo-hi	1-num-3-cat	5	200-200` dataset 13
+
+RUN ALL BELOW LINE 579
+
+
+```{r, eval=FALSE}
+
+x <- aggregate(ARI_x ~ ., data = data_4800_ARI[data_4800_ARI$overlap == 'hi-hi', -5], function(x) round(median(x), 3))
+y <- unstack(aggregate(ARI_x ~ ., data = data_4800_ARI[data_4800_ARI$overlap == 'hi-hi', -5], function(x) round(median(x), 3)), ARI_x ~ method)
+(data_4800_ARI_hi_hi_median <- cbind(subset(x[1:12, ], select = -c(ARI_x, method)), y))
+
+```
+
+
 
 
 ---
