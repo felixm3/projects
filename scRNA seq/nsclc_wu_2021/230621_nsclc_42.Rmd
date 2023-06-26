@@ -1,0 +1,297 @@
+---
+title: "scRNA-seq NSCLC"
+output: html_document
+date: '2023-06-21'
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(
+  tidy = TRUE,
+  tidy.opts = list(width.cutoff = 95),
+  message = FALSE,
+  warning = FALSE,
+  time_it = TRUE,
+  echo = TRUE
+)
+
+```
+
+Analyzing data from  [Wu et al 2021's](https://www.nature.com/articles/s41467-021-22801-0) publication "Single-cell profiling of tumor heterogeneity and the microenvironment in advanced non-small cell lung cancer" with [processed data downloaded from here.](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE148071)
+
+```{r clean slate, echo = FALSE}
+rm(list = ls())
+gc()
+
+#ls()
+#getwd()
+
+```
+
+Load raw data
+
+```{r load Patient 17 data}
+
+raw_data <- read.table('GSM4453592_P17_exp.txt')
+
+raw_data[1:10, 1:4]
+
+```
+
+Create Seurat object
+
+Load necessary packages
+
+```{r load necessary packages}
+
+library(dplyr)
+library(Seurat)
+library(patchwork)
+
+```
+
+Initialize Seurat object
+
+```{r initialize Seurat object}
+
+# Initialize the Seurat object with the raw (non-normalized data).
+nsclc17 <- CreateSeuratObject(counts = raw_data)
+
+nsclc17
+
+```
+
+# Standard pre-processing workflow
+
+## QC and selecting cells for further analysis
+
+
+
+```{r}
+
+# The [[ operator can add columns to object metadata. This is a great place to stash QC stats
+nsclc17[["percent.mt"]] <- PercentageFeatureSet(nsclc17, pattern = "^MT-")
+
+str(nsclc17)
+
+```
+
+What are the two levels of the cells?? `levels(Idents(nsclc17))`
+
+---
+
+Where are QC metrics stored in Seurat?
+
+```{r}
+
+# Visualize QC metrics as a violin plot
+VlnPlot(nsclc17, 
+        features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), 
+        ncol = 3)
+
+```
+
+```{r}
+
+# FeatureScatter is typically used to visualize feature-feature relationships, but can be used
+# for anything calculated by the object, i.e. columns in object metadata, PC scores etc.
+
+plot1 <- FeatureScatter(nsclc17, feature1 = "nCount_RNA", feature2 = "percent.mt")
+plot2 <- FeatureScatter(nsclc17, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+plot1 + plot2
+
+```
+
+
+
+```{r eval=FALSE, echo=FALSE}
+
+# Arbitrary rough filter for empties (< 200 genes expressed) and doublets (> 4000 genes expressed)
+
+nsclc17 <- subset(nsclc17, subset = nFeature_RNA > 200 & nFeature_RNA < 3200)
+
+```
+
+# Normalizing the data
+
+```{r}
+
+nsclc17 <- NormalizeData(nsclc17, normalization.method = "LogNormalize", scale.factor = 10000)
+str(nsclc17)
+
+```
+
+
+# Identification of highly variable features (feature selection)
+
+```{r}
+
+nsclc17 <- FindVariableFeatures(nsclc17, selection.method = "vst", nfeatures = 600)
+str(nsclc17)
+
+# Identify the 10 most highly variable genes
+top10 <- head(VariableFeatures(nsclc17), 10)
+
+# plot variable features with and without labels
+plot1 <- VariableFeaturePlot(nsclc17)
+plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
+#plot1
+plot2
+
+```
+
+# Scaling the Data
+
+```{r}
+
+all.genes <- rownames(nsclc17)
+nsclc17 <- ScaleData(nsclc17, features = all.genes)
+
+```
+
+# Perform linear dimensional reduction
+
+```{r}
+
+nsclc17 <- RunPCA(nsclc17, features = VariableFeatures(object = nsclc17))
+
+```
+
+```{r}
+
+# Examine and visualize PCA results a few different ways
+print(nsclc17[["pca"]], dims = 1:5, nfeatures = 5)
+
+```
+
+```{r}
+
+VizDimLoadings(nsclc17, dims = 1:2, reduction = "pca")
+
+```
+
+```{r}
+
+DimPlot(nsclc17, reduction = "pca")
+
+```
+
+```{r}
+
+DimHeatmap(nsclc17, dims = 1, cells = 500, balanced = TRUE)
+
+```
+
+```{r}
+
+DimHeatmap(nsclc17, dims = 1:15, cells = 500, balanced = TRUE)
+
+```
+
+# Determine the ‘dimensionality’ of the dataset
+
+```{r}
+
+# NOTE: This process can take a long time for big datasets, comment out for expediency. More
+# approximate techniques such as those implemented in ElbowPlot() can be used to reduce
+# computation time
+nsclc17 <- JackStraw(nsclc17, num.replicate = 100)
+nsclc17 <- ScoreJackStraw(nsclc17, dims = 1:20)
+
+```
+
+```{r}
+
+JackStrawPlot(nsclc17, dims = 1:20)
+
+```
+
+An alternative heuristic method generates an ‘Elbow plot’: a ranking of principle components based on the percentage of variance explained by each one (ElbowPlot() function). In this example, we can observe an ‘elbow’ around PC9-10, suggesting that the majority of true signal is captured in the first 10 PCs.
+
+```{r elbow plot}
+
+ElbowPlot(nsclc17)
+
+```
+
+# Cluster the cells
+
+```{r}
+
+nsclc17 <- FindNeighbors(nsclc17, dims = 1:20)
+nsclc17 <- FindClusters(nsclc17, resolution = 1)
+
+```
+
+```{r}
+
+# Look at cluster IDs of the first 5 cells
+head(Idents(nsclc17), 5)
+
+```
+
+# Run non-linear dimensional reduction (UMAP/tSNE)
+
+```{r}
+
+# If you haven't installed UMAP, you can do so via reticulate::py_install(packages =
+# 'umap-learn')
+nsclc17 <- RunUMAP(nsclc17, dims = 1:10)
+
+```
+
+```{r}
+
+# note that you can set `label = TRUE` or use the LabelClusters function to help label
+# individual clusters
+DimPlot(nsclc17, reduction = "umap", label = TRUE)
+
+```
+
+# Finding differentially expressed features (cluster biomarkers)
+
+```{r}
+
+# find markers for every cluster compared to all remaining cells, report only the positive
+# ones
+nsclc17.markers <- FindAllMarkers(nsclc17, 
+                                  only.pos = TRUE, 
+                                  min.pct = 0.25, 
+                                  logfc.threshold = 0.25)
+
+nsclc17.markers %>%
+    group_by(cluster) %>%
+    slice_max(n = 2, order_by = avg_log2FC)
+
+```
+
+```{r}
+
+# find markers for every cluster compared to all remaining cells, report only the positive
+# ones
+
+nsclc17.markers %>%
+    group_by(cluster) %>%
+    slice_max(n = 5, order_by = avg_log2FC)
+
+```
+
+
+```{r eval=FALSE, echo=FALSE}
+
+VlnPlot(nsclc17, ncol = 2, log = TRUE, features = c("CLDN5", "VWF", "PECAM1"))
+
+```
+
+```{r eval=FALSE, echo=FALSE}
+
+VlnPlot(nsclc17, ncol = 2, log = TRUE, features = c("CLDN5", "VWF", "PECAM1", 
+                                        "CAPS", "SNTN", 
+                                        "CLDN18", "AQP4", "FLOR1"))
+
+```
+
+
+
+
+
